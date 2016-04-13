@@ -98,6 +98,8 @@ namespace KeyboardSwitcher
             {
                 case Messages.WM_MOUSEWHEEL:
                     mouseDelta = mouseHookStruct.MouseData;
+                    if (mouseDelta > 0) keyCode = Keys.Shift;
+                    if (mouseDelta < 0) keyCode = Keys.Control;
                     break;
                 case Messages.WM_MOUSEHWHEEL:
                     //mouseDelta = mouseHookStruct.MouseData;

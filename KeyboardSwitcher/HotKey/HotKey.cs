@@ -8,148 +8,118 @@ namespace KeyboardSwitcher
 {
     internal class HotKey
     {
-        public List<Keys> KeyList { get; }
-        public SpecialKeyType SpecialKey { get; }
-        public HotKeyType Type { get; }
-        public bool IsOtherNotPress { get; }
-        public CheckState Check { get; set; } //Если сработал 
-
-        public delegate void HotKeyEventHandler(bool isDown);
-        public event HotKeyEventHandler HotKeyEvent;
-
+        private readonly List<Keys> _keyList;
+        private readonly HotKeyType _type;
+        private readonly bool _isOtherNotPress;
+        private bool _isEnableHandled;
+        private readonly HotKeyEventHandler _hotKeyEvent;
         private int _index;
         private bool _isOtherPress;
 
-        public HotKey(List<Keys> keyses, SpecialKeyType special = SpecialKeyType.None, 
+        public bool Check { get; set; } //Если сработал 
+
+        public HotKey(List<Keys> keyses, HotKeyEventHandler hotKeyEvent, bool isEnableHandled = true,
             HotKeyType type = HotKeyType.Press, bool isOtherNotPress = false)
         {
-            KeyList = keyses;
-            SpecialKey = special;
-            Type = type;
-            IsOtherNotPress = isOtherNotPress;
+            _keyList = keyses;
+            _hotKeyEvent = hotKeyEvent;
+            _type = type;
+            _isOtherNotPress = isOtherNotPress;
+            _isEnableHandled = isEnableHandled && (type == HotKeyType.Press || type == HotKeyType.Hold);
 
             _isOtherPress = false;
             _index = 0;
-            Check = CheckState.Uncheck;
+            Check = false;
         }
 
-        public void AllKeyRelease()
+        public void KeyChanged(List<Keys> keyses, ChangedType ct, ref bool handled)
         {
-            if (Check == CheckState.Activate)
+            switch (ct)
             {
-                if (Type == HotKeyType.Release || Type == HotKeyType.ReleaseNotHold) HotKeyEvent?.Invoke(true);
-                if (Type == HotKeyType.Hold) HotKeyEvent?.Invoke(false);
+                case ChangedType.Down:
+                    if (IsEqually(keyses))
+                    {
+                        switch (_type)
+                        {
+                            case HotKeyType.Press:
+                            case HotKeyType.Hold:
+                                _hotKeyEvent(true);
+                                break;
+
+                        }
+                        Check = true;
+                    }
+                    else
+                    {
+                        if (Check && _type == HotKeyType.Hold) _hotKeyEvent(false);
+                        Check = false;
+                    }
+                    break;
+                case ChangedType.Repeat:
+                    if (Check && _type == HotKeyType.Hold) _hotKeyEvent(true);
+                    if (Check && _type == HotKeyType.ReleaseNotHold) Check = false;
+                    break;
+                case ChangedType.Up:
+                    if (_isOtherNotPress) --_index;
+                    if (Check && _type == HotKeyType.Hold)
+                    {
+                        _hotKeyEvent(false);
+                        Check = false;
+                    }
+                    if (keyses.Count == 0)
+                    {
+                        if(Check && (_type == HotKeyType.Release || _type == HotKeyType.ReleaseNotHold)) _hotKeyEvent(true);
+                        _isOtherPress = false;
+                        _index = 0;
+                        Check = false;
+                    }
+                    break;
             }
-            _isOtherPress = false;
-            _index = 0;
-            Check = CheckState.Uncheck;
+            if (Check && _isEnableHandled) handled = true;
         }
 
-        public void KeyChanged(List<Keys> keyses, bool isAdd)
+
+        private bool IsEqually(List<Keys> keyses)
         {
-            bool isEqually = false;
-            if (IsOtherNotPress)
+            if (_isOtherNotPress)
             {
                 if (!_isOtherPress &&
                     keyses.Count == _index + 1 &&
-                    _index < KeyList.Count &&
-                    keyses[_index] == KeyList[_index])
+                    _index < _keyList.Count &&
+                    keyses[_index] == _keyList[_index])
                 {
                     _index++;
-                    isEqually = _index == KeyList.Count;
+                    return _index == _keyList.Count;
                 }
-                else
-                {
-                    _isOtherPress = true;
-                }
+                _isOtherPress = true;
+                return false;
             }
             else
             {
                 _index = 0;
-                if (keyses.Count == KeyList.Count)
+                if (keyses.Count == _keyList.Count)
                 {
                     foreach (var key in keyses)
                     {
-                        if (key != KeyList[_index])
-                        {
-                            break;
-                        }
+                        if (key != _keyList[_index]) return false;
                         _index++;
                     }
                 }
-                isEqually = _index == KeyList.Count;
-            }
-
-
-            if ((Check == CheckState.Activate || Check == CheckState.Down) && !isEqually) //Если другая кнопка
-            {
-                if (Check == CheckState.Activate && Type == HotKeyType.Hold) HotKeyEvent?.Invoke(false);
-                if ((Type != HotKeyType.Release && Type != HotKeyType.ReleaseNotHold) || 
-                    Check == CheckState.Down || isAdd)
-                    Check = CheckState.Uncheck;
-            }
-
-            if (isEqually && Check == CheckState.Uncheck && isAdd) //Если правильная кнопка
-            {
-                if (SpecialKey == SpecialKeyType.None)
-                {
-                    Check = CheckState.Activate;
-                    if (Type == HotKeyType.Press || Type == HotKeyType.Hold)
-                        HotKeyEvent?.Invoke(true);
-                }
-                else
-                {
-                    Check = CheckState.Down;
-                }
-            }
-        }
-
-        public void KeyRepeatOrSpecial(SpecialKeyType sKey)
-        {
-            if (Check == CheckState.Activate && Type == HotKeyType.ReleaseNotHold)
-                Check = CheckState.Uncheck; //Если не повторять
-
-            if (sKey == SpecialKeyType.None) //Repeat
-            {
-                if (Check == CheckState.Activate && Type == HotKeyType.Hold)
-                    HotKeyEvent?.Invoke(true);
-            }
-            else
-            {
-                if (SpecialKey == sKey) //Если всё ок
-                {
-                    if (Check == CheckState.Down) Check = CheckState.Activate;
-                    if (Check == CheckState.Activate && (Type == HotKeyType.Press || Type == HotKeyType.Hold))
-                        HotKeyEvent?.Invoke(true);
-                }
-                else
-                {
-                    if (Check == CheckState.Activate)
-                    {
-                        if(Type == HotKeyType.Hold) HotKeyEvent?.Invoke(false);
-                        if (Type != HotKeyType.Press) Check = CheckState.Uncheck;
-                    }
-                    _isOtherPress = IsOtherNotPress;
-                }
+                return true;
             }
         }
     }
 
-    internal enum CheckState
+    internal delegate void HotKeyEventHandler(bool isDown);
+
+    internal enum ChangedType
     {
-        Uncheck = 0,
-        Down = 1,
-        Activate = 2,
-        Error = 3
+        Down = 0,
+        Up = 1,
+        Repeat = 3,
     }
 
-    internal enum SpecialKeyType
-    {
-        None = 0,
-        WheelUp = 120,
-        WheelDown = -120
-    }
-
+   
     internal enum HotKeyType
     {
         Press,
