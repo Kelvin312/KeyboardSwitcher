@@ -49,10 +49,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HotKeyManager.cs" />
-    <Compile Include="KeyboardHook.cs" />
-    <Compile Include="LowLevelHook.cs" />
-    <Compile Include="MouseHook.cs" />
+    <Compile Include="HotKey\HotKey.cs" />
+    <Compile Include="HotKey\HotKeyManager.cs" />
+    <Compile Include="HotKey\KeyboardHook.cs" />
+    <Compile Include="HotKey\LowLevelHook.cs" />
+    <Compile Include="HotKey\MouseHook.cs" />
     <Compile Include="UI\SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
