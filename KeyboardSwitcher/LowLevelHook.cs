@@ -32,7 +32,7 @@ namespace KeyboardSwitcher
             get { return _hHook != IntPtr.Zero; }
         }
 
-        protected void StartHook()
+        public void StartHook()
         {
             if (_hHook == IntPtr.Zero && _callback != null)
             {
@@ -51,7 +51,7 @@ namespace KeyboardSwitcher
             }
         }
 
-        protected void Unhook()
+        public void Unhook()
         {
             if (_hHook != IntPtr.Zero)
             {
@@ -71,6 +71,11 @@ namespace KeyboardSwitcher
                 return new IntPtr(-1);
             }
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
+        }
+
+        ~LowLevelHook()
+        {
+            Unhook();
         }
 
         private delegate IntPtr HookProcedure(int nCode, IntPtr wParam, IntPtr lParam);

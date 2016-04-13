@@ -28,7 +28,7 @@ namespace KeyboardSwitcher
             if (!IsHooked)
             {
                 _oldX = -1;
-                _oldY = 1;
+                _oldY = -1;
                 base.StartHook();
             }
         }
@@ -50,6 +50,7 @@ namespace KeyboardSwitcher
                 Marshal.PtrToStructure(lParam, typeof (MouseLLHookStruct));
 
             MouseButtons button = MouseButtons.None;
+            Keys keyCode = Keys.None;
             short mouseDelta = 0;
             int clickCount = 0;
 
@@ -59,84 +60,76 @@ namespace KeyboardSwitcher
             switch ((Messages) wParam)
             {
                 case Messages.WM_LBUTTONDOWN:
-                    isMouseButtonDown = true;
-                    button = MouseButtons.Left;
-                    clickCount = 1;
-                    break;
                 case Messages.WM_LBUTTONUP:
-                    isMouseButtonUp = true;
-                    button = MouseButtons.Left;
-                    clickCount = 1;
-                    break;
                 case Messages.WM_LBUTTONDBLCLK:
-                    isMouseButtonDown = true;
                     button = MouseButtons.Left;
-                    clickCount = 2;
+                    keyCode = Keys.LButton;
                     break;
                 case Messages.WM_RBUTTONDOWN:
-                    isMouseButtonDown = true;
-                    button = MouseButtons.Right;
-                    clickCount = 1;
-                    break;
                 case Messages.WM_RBUTTONUP:
-                    isMouseButtonUp = true;
-                    button = MouseButtons.Right;
-                    clickCount = 1;
-                    break;
                 case Messages.WM_RBUTTONDBLCLK:
-                    isMouseButtonDown = true;
                     button = MouseButtons.Right;
-                    clickCount = 2;
+                    keyCode = Keys.RButton;
                     break;
-                case Messages.WM_MBUTTONDOWN:
-                    isMouseButtonDown = true;
-                    button = MouseButtons.Middle;
-                    clickCount = 1;
-                    break;
+                case Messages.WM_MBUTTONDOWN: 
                 case Messages.WM_MBUTTONUP:
-                    isMouseButtonUp = true;
-                    button = MouseButtons.Middle;
-                    clickCount = 1;
-                    break;
                 case Messages.WM_MBUTTONDBLCLK:
-                    isMouseButtonDown = true;
                     button = MouseButtons.Middle;
-                    clickCount = 2;
+                    keyCode = Keys.MButton;
                     break;
+                case Messages.WM_XBUTTONDOWN:
+                case Messages.WM_XBUTTONUP:
+                case Messages.WM_XBUTTONDBLCLK:
+                    if (mouseHookStruct.MouseData == 1)
+                    {
+                        button = MouseButtons.XButton1;
+                        keyCode = Keys.XButton1;
+                    }
+                    else
+                    {
+                        button = MouseButtons.XButton2;
+                        keyCode = Keys.XButton2;
+                    }
+                    break;
+            }
+
+
+            switch ((Messages) wParam)
+            {
                 case Messages.WM_MOUSEWHEEL:
                     mouseDelta = mouseHookStruct.MouseData;
                     break;
                 case Messages.WM_MOUSEHWHEEL:
-                    mouseDelta = mouseHookStruct.MouseData;
+                    //mouseDelta = mouseHookStruct.MouseData;
                     break;
+                case Messages.WM_LBUTTONDOWN:
+                case Messages.WM_RBUTTONDOWN:
+                case Messages.WM_MBUTTONDOWN:
                 case Messages.WM_XBUTTONDOWN:
-                    button = mouseHookStruct.MouseData == 1
-                        ? MouseButtons.XButton1
-                        : MouseButtons.XButton2;
-                    isMouseButtonDown = true;
                     clickCount = 1;
+                    isMouseButtonDown = true;
                     break;
+                case Messages.WM_LBUTTONUP:
+                case Messages.WM_RBUTTONUP:
+                case Messages.WM_MBUTTONUP:
                 case Messages.WM_XBUTTONUP:
-                    button = mouseHookStruct.MouseData == 1
-                        ? MouseButtons.XButton1
-                        : MouseButtons.XButton2;
-                    isMouseButtonUp = true;
                     clickCount = 1;
+                    isMouseButtonUp = true;
                     break;
+                case Messages.WM_LBUTTONDBLCLK:
+                case Messages.WM_RBUTTONDBLCLK:
+                case Messages.WM_MBUTTONDBLCLK:
                 case Messages.WM_XBUTTONDBLCLK:
-                    isMouseButtonDown = true;
-                    button = mouseHookStruct.MouseData == 1
-                        ? MouseButtons.XButton1
-                        : MouseButtons.XButton2;
                     clickCount = 2;
                     break;
             }
 
             var e = new MouseEventExtArgs(
                 button,
+                keyCode,
                 clickCount,
-                mouseHookStruct.Point.X,
-                mouseHookStruct.Point.Y,
+                mouseHookStruct.X,
+                mouseHookStruct.Y,
                 mouseDelta);
 
             if (MouseDown != null && isMouseButtonDown)
@@ -155,28 +148,22 @@ namespace KeyboardSwitcher
             }
 
             //If someone listens to move and there was a change in coordinates raise move event
-            if ((MouseMove != null) && (_oldX != mouseHookStruct.Point.X || _oldY != mouseHookStruct.Point.Y))
+            if (_oldX != mouseHookStruct.X || _oldY != mouseHookStruct.Y)
             {
-                _oldX = mouseHookStruct.Point.X;
-                _oldY = mouseHookStruct.Point.Y;
+                _oldX = mouseHookStruct.X;
+                _oldY = mouseHookStruct.Y;
 
-                MouseMove.Invoke(null, e);
+                MouseMove?.Invoke(null, e);
             }
 
             return e.Handled;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Point
-        {
-            public int X;
-            public int Y;
-        }
-
         [StructLayout(LayoutKind.Explicit)]
         private struct MouseLLHookStruct
         {
-            [FieldOffset(0x00)] public Point Point;
+            [FieldOffset(0x00)] public int X;
+            [FieldOffset(0x04)] public int Y;
             [FieldOffset(0x0A)] public Int16 MouseData;
             [FieldOffset(0x10)] public Int32 Timestamp;
         }
@@ -185,17 +172,18 @@ namespace KeyboardSwitcher
 
     public class MouseEventExtArgs : MouseEventArgs
     {
-        /// <summary>
-        /// Initializes a new instance of the MouseEventArgs class. 
-        /// </summary>
-        public MouseEventExtArgs(MouseButtons buttons, int clicks, int x, int y, int delta)
+        public MouseEventExtArgs(MouseButtons buttons, Keys keyCode, int clicks, int x, int y, int delta)
             : base(buttons, clicks, x, y, delta)
         {
+            KeyCode = keyCode;
+            Handled = false;
         }
 
         internal MouseEventExtArgs(MouseEventArgs e) : base(e.Button, e.Clicks, e.X, e.Y, e.Delta)
         {
         }
+
+        public Keys KeyCode { get; }
 
         /// <summary>
         /// Получает или задает значение, определяющее, было ли обработано событие.

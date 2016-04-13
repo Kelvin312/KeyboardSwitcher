@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace KeyboardSwitcher
 {
-    class KeyboardHook : LowLevelHook
+    internal class KeyboardHook : LowLevelHook
     {
         public event KeyEventHandler KeyDown;
         public event KeyEventHandler KeyUp;
@@ -15,11 +15,6 @@ namespace KeyboardSwitcher
         public KeyboardHook() : base(HookType.WH_KEYBOARD_LL)
         {
             base.Callback = KeyboardCallback;
-        }
-
-        public new void StartHook()
-        {
-            base.StartHook();
         }
 
         public void TryUnhook()
