@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
-namespace KeyboardSwitcher
+namespace KeyboardSwitcher.HotKeys
 {
-    internal class LowLevelHook
+    internal class LowLevelHook : IDisposable
     {
         private readonly HookType _type;
         private HookCallback _callback;
@@ -38,16 +34,11 @@ namespace KeyboardSwitcher
             {
                 HookProcedure hookProcedure = InternalCallback;
 
-                _hHook = SetWindowsHookEx(
+                _hHook = ApiHelper.FailIfZero(SetWindowsHookEx(
                     _type,
                     hookProcedure,
                     Process.GetCurrentProcess().MainModule.BaseAddress,
-                    0);
-
-                if (_hHook == IntPtr.Zero)
-                {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
+                    0));
             }
         }
 
@@ -55,11 +46,7 @@ namespace KeyboardSwitcher
         {
             if (_hHook != IntPtr.Zero)
             {
-                if (UnhookWindowsHookEx(_hHook) == 0)
-                {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
-
+                ApiHelper.FailIfZero(UnhookWindowsHookEx(_hHook));
                 _hHook = IntPtr.Zero;
             }
         }
@@ -73,10 +60,12 @@ namespace KeyboardSwitcher
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
         }
 
-        ~LowLevelHook()
+        public void Dispose()
         {
             Unhook();
         }
+
+        #region PInvoke Declarations
 
         private delegate IntPtr HookProcedure(int nCode, IntPtr wParam, IntPtr lParam);
 
@@ -89,15 +78,15 @@ namespace KeyboardSwitcher
             int dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto,
-          CallingConvention = CallingConvention.StdCall)]
+            CallingConvention = CallingConvention.StdCall)]
         private static extern IntPtr CallNextHookEx(
-          IntPtr hHook,
-          int nCode,
-          IntPtr wParam,
-          IntPtr lParam);
+            IntPtr hHook,
+            int nCode,
+            IntPtr wParam,
+            IntPtr lParam);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto,
-           CallingConvention = CallingConvention.StdCall, SetLastError = true)]
+            CallingConvention = CallingConvention.StdCall, SetLastError = true)]
         private static extern int UnhookWindowsHookEx(IntPtr hHook);
 
 
@@ -135,5 +124,7 @@ namespace KeyboardSwitcher
             WH_KEYBOARD_LL = 13,
             WH_MOUSE_LL = 14
         }
+
+        #endregion
     }
 }

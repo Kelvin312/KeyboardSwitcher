@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
-namespace KeyboardSwitcher
+namespace KeyboardSwitcher.HotKeys
 {
     internal class MouseHook : LowLevelHook
     {
@@ -15,8 +15,7 @@ namespace KeyboardSwitcher
         public event EventHandler<MouseEventExtArgs> MouseWheel;
         public event EventHandler<MouseEventExtArgs> MouseMove;
 
-        private int _oldX;
-        private int _oldY;
+        private POINT _oldPoint;
 
         public MouseHook() : base(HookType.WH_MOUSE_LL)
         {
@@ -27,8 +26,7 @@ namespace KeyboardSwitcher
         {
             if (!IsHooked)
             {
-                _oldX = -1;
-                _oldY = -1;
+                _oldPoint = new POINT(-1, -1);
                 base.StartHook();
             }
         }
@@ -98,8 +96,8 @@ namespace KeyboardSwitcher
             {
                 case Messages.WM_MOUSEWHEEL:
                     mouseDelta = mouseHookStruct.MouseData;
-                    if (mouseDelta > 0) keyCode = Keys.Shift;
-                    if (mouseDelta < 0) keyCode = Keys.Control;
+                    if (mouseDelta > 0) keyCode = (Keys)KeysEx.WheelUp;
+                    if (mouseDelta < 0) keyCode = (Keys)KeysEx.WheelDown;
                     break;
                 case Messages.WM_MOUSEHWHEEL:
                     //mouseDelta = mouseHookStruct.MouseData;
@@ -130,8 +128,8 @@ namespace KeyboardSwitcher
                 button,
                 keyCode,
                 clickCount,
-                mouseHookStruct.X,
-                mouseHookStruct.Y,
+                mouseHookStruct.Point.X,
+                mouseHookStruct.Point.Y,
                 mouseDelta);
 
             if (MouseDown != null && isMouseButtonDown)
@@ -150,11 +148,9 @@ namespace KeyboardSwitcher
             }
 
             //If someone listens to move and there was a change in coordinates raise move event
-            if (_oldX != mouseHookStruct.X || _oldY != mouseHookStruct.Y)
+            if (_oldPoint != mouseHookStruct.Point)
             {
-                _oldX = mouseHookStruct.X;
-                _oldY = mouseHookStruct.Y;
-
+                _oldPoint = mouseHookStruct.Point;
                 MouseMove?.Invoke(null, e);
             }
 
@@ -164,13 +160,17 @@ namespace KeyboardSwitcher
         [StructLayout(LayoutKind.Explicit)]
         private struct MouseLLHookStruct
         {
-            [FieldOffset(0x00)] public int X;
-            [FieldOffset(0x04)] public int Y;
+            [FieldOffset(0x00)] public POINT Point;
             [FieldOffset(0x0A)] public Int16 MouseData;
             [FieldOffset(0x10)] public Int32 Timestamp;
         }
     }
 
+    public enum KeysEx
+    {
+        WheelUp = Keys.Shift | 1,
+        WheelDown = Keys.Shift | 2
+    }
 
     public class MouseEventExtArgs : MouseEventArgs
     {

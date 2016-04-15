@@ -49,11 +49,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HotKey\HotKey.cs" />
-    <Compile Include="HotKey\HotKeyManager.cs" />
-    <Compile Include="HotKey\KeyboardHook.cs" />
-    <Compile Include="HotKey\LowLevelHook.cs" />
-    <Compile Include="HotKey\MouseHook.cs" />
+    <Compile Include="ApiHelper.cs" />
+    <Compile Include="EventLayer.cs" />
+    <Compile Include="HotKeys\HotKey.cs" />
+    <Compile Include="HotKeys\HotKeyManager.cs" />
+    <Compile Include="HotKeys\KeyboardHook.cs" />
+    <Compile Include="HotKeys\LowLevelHook.cs" />
+    <Compile Include="HotKeys\MouseHook.cs" />
     <Compile Include="UI\SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -62,8 +64,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SettingsHelper.cs" />
+    <Compile Include="SettingsLayer.cs" />
     <Compile Include="SystemWindow.cs" />
+    <Compile Include="PInvokeTypes.cs" />
     <EmbeddedResource Include="UI\SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
