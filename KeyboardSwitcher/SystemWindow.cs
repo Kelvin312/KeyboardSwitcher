@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,10 +14,17 @@ namespace KeyboardSwitcher
     {
         private IntPtr _hwnd;
         public IntPtr HWnd { get { return _hwnd; } }
-        public SystemWindow(IntPtr HWnd)
+        public SystemWindow(IntPtr hwnd)
         {
-            _hwnd = HWnd;
+            _hwnd = hwnd;
         }
+        public SystemWindow(IntPtr hwnd, int pid, int tid)
+        {
+            _hwnd = hwnd;
+            _processId = pid;
+            _threadId = tid;
+        }
+
         public static SystemWindow ForegroundWindow()
         {
             return new SystemWindow(GetForegroundWindow());
@@ -70,7 +78,7 @@ namespace KeyboardSwitcher
                 hwnd = focusedHandle;
             }
 
-            return new SystemWindow(hwnd);
+            return new SystemWindow(hwnd, ProcessId, ThreadId);
         }
 
 
@@ -154,6 +162,26 @@ namespace KeyboardSwitcher
             {
                 if (_processId < 5) _threadId = GetWindowThreadProcessId(HWnd, out _processId);
                 return _threadId;
+            }
+        }
+
+        private CultureInfo _keyboardLayout;
+        public CultureInfo KeyboardLayout
+        {
+            get
+            {
+                if (_keyboardLayout == null)
+                {
+                    _keyboardLayout = new CultureInfo((short) GetKeyboardLayout(ThreadId));
+                }
+                return _keyboardLayout;
+            }
+            set
+            {
+                PostMessage(new HandleRef(this, HWnd), WM_INPUTLANGCHANGEREQUEST,
+                    new IntPtr(INPUTLANGCHANGE_SYSCHARSET),
+                    LoadKeyboardLayout($"{value.LCID:X8}", KLF_ACTIVATE));
+                _keyboardLayout = null;
             }
         }
 
@@ -263,7 +291,7 @@ namespace KeyboardSwitcher
 
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct GUITHREADINFO
+         struct GUITHREADINFO
         {
             public int cbSize;
             public uint flags;
@@ -277,21 +305,21 @@ namespace KeyboardSwitcher
         }
 
         [DllImport("user32.dll")]
-        private static extern bool GetGUIThreadInfo(int idThread, ref GUITHREADINFO lpgui);
+         static extern bool GetGUIThreadInfo(int idThread, ref GUITHREADINFO lpgui);
 
         [DllImport("kernel32.dll")]
-        private static extern int GetCurrentThreadId();
+         static extern int GetCurrentThreadId();
 
         [DllImport("user32.dll")]
-        private static extern bool AttachThreadInput(int idAttach, int idAttachTo, bool fAttach);
+         static extern bool AttachThreadInput(int idAttach, int idAttachTo, bool fAttach);
 
         [DllImport("user32.dll")]
-        private static extern IntPtr GetFocus();
+         static extern IntPtr GetFocus();
 
         [DllImport("user32.dll", ExactSpelling = true)]
-        private static extern IntPtr GetAncestor(IntPtr hwnd, GetAncestorFlags flags);
+         static extern IntPtr GetAncestor(IntPtr hwnd, GetAncestorFlags flags);
 
-        private enum GetAncestorFlags:uint
+         enum GetAncestorFlags:uint
         {
             GetParent = 1,
             GetRoot = 2,
@@ -299,9 +327,9 @@ namespace KeyboardSwitcher
         }
 
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, SWP uFlags);
+         static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, SWP uFlags);
 
-        private static class HWNDInsertAfter
+         static class HWNDInsertAfter
         {
             public static IntPtr
             NoTopMost = new IntPtr(-2),
@@ -311,7 +339,7 @@ namespace KeyboardSwitcher
         }
 
         [Flags]
-        private enum SWP : uint
+         enum SWP : uint
         {
             AsynchronousWindowPosition = 0x4000,
             DeferErase = 0x2000,
@@ -330,11 +358,23 @@ namespace KeyboardSwitcher
             ShowWindow = 0x0040,
         }
 
-        private const int WM_MOUSEWHEEL = 0x020A;
+         const int WM_MOUSEWHEEL = 0x020A;
+         const int WM_INPUTLANGCHANGEREQUEST = 0x0050;
+
+        const int INPUTLANGCHANGE_SYSCHARSET = 0x0001;
+        const int KLF_ACTIVATE = 0x0001;
+
 
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern bool PostMessage(HandleRef hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+
+
+        [DllImport("user32.dll")]
+         static extern IntPtr GetKeyboardLayout(int idThread);
+
+        [DllImport("user32.dll")]
+         static extern IntPtr LoadKeyboardLayout(string pwszKLID, uint Flags);
 
 
         [DllImport("user32.dll")]
@@ -506,10 +546,10 @@ namespace KeyboardSwitcher
         static readonly uint BM_GETCHECK = 0xF0, BM_SETCHECK = 0xF1;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = false)]
-        internal static extern IntPtr SendMessage(HandleRef hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+         static extern IntPtr SendMessage(HandleRef hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = false)]
-        internal static extern IntPtr SendMessage(HandleRef hWnd, uint Msg, IntPtr wParam, [Out] StringBuilder lParam);
+         static extern IntPtr SendMessage(HandleRef hWnd, uint Msg, IntPtr wParam, [Out] StringBuilder lParam);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);

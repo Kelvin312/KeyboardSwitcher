@@ -50,12 +50,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApiHelper.cs" />
+    <Compile Include="CopyPaster.cs" />
     <Compile Include="EventLayer.cs" />
     <Compile Include="HotKeys\HotKey.cs" />
     <Compile Include="HotKeys\HotKeyManager.cs" />
     <Compile Include="HotKeys\KeyboardHook.cs" />
     <Compile Include="HotKeys\LowLevelHook.cs" />
     <Compile Include="HotKeys\MouseHook.cs" />
+    <Compile Include="MyModules.cs" />
     <Compile Include="UI\SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>

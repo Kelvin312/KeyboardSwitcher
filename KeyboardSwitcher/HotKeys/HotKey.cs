@@ -47,7 +47,7 @@ namespace KeyboardSwitcher.HotKeys
                         {
                             case HotKeyType.Press:
                             case HotKeyType.Hold:
-                                EventLayer._hotKeyEvent(EventType,true,ref _isRun);
+                                EventLayer.HotKeyEvent(EventType,true,ref _isRun);
                                 break;
 
                         }
@@ -55,12 +55,12 @@ namespace KeyboardSwitcher.HotKeys
                     }
                     else
                     {
-                        if (Check && Type == HotKeyType.Hold) EventLayer._hotKeyEvent(EventType, false, ref _isRun);
+                        if (Check && Type == HotKeyType.Hold) EventLayer.HotKeyEvent(EventType, false, ref _isRun);
                         Check = false;
                     }
                     break;
                 case ChangedType.Repeat:
-                    if (Check && Type == HotKeyType.Hold) EventLayer._hotKeyEvent(EventType, true,ref _isRun);
+                    if (Check && Type == HotKeyType.Hold) EventLayer.HotKeyEvent(EventType, true,ref _isRun);
                     if (Check && Type == HotKeyType.ReleaseNotHold) Check = false;
                     break;
                 case ChangedType.Up:
@@ -68,13 +68,13 @@ namespace KeyboardSwitcher.HotKeys
                     if (IsOtherNotPress) --_index;
                     if (Check && Type == HotKeyType.Hold)
                     {
-                        EventLayer._hotKeyEvent(EventType, false, ref _isRun);
+                        EventLayer.HotKeyEvent(EventType, false, ref _isRun);
                         Check = false;
                     }
                     if (keyses.Count == 0)
                     {
                         if(Check && (Type == HotKeyType.Release || Type == HotKeyType.ReleaseNotHold))
-                            EventLayer._hotKeyEvent(EventType, true, ref _isRun);
+                            EventLayer.HotKeyEvent(EventType, true, ref _isRun);
                         _isOtherPress = false;
                         _index = 0;
                         Check = false;

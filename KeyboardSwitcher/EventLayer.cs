@@ -2,14 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using KeyboardSwitcher.HotKeys;
 
 namespace KeyboardSwitcher
 {
     public static class EventLayer
     {
-        public delegate void HotKeyEventHandler(HotKeyEventType eventType, bool isDown, ref bool isRun);
-        
-        public static HotKeyEventHandler _hotKeyEvent;
+        private static HotKeyManager hotKeyManager = new HotKeyManager();
+        private static MyModules myModules = new MyModules();
+
+
+        public static void RunProgramm()
+        {
+            
+        }
+
+        public static void HotKeyEvent(HotKeyEventType eventType, bool isDown, ref bool isRun)
+        {
+            
+        }
 
     }
     public enum HotKeyEventType
