@@ -8,131 +8,77 @@ namespace KeyboardSwitcher.HotKeys
 {
     public class HotKey
     {
-        public  List<Keys> KeyList { get; }
-        public HotKeyType Type { get; }
-        public bool IsOtherNotPress { get; }
-        public bool IsEnableHandled { get; }
-        public HotKeyEventType EventType { get; }
-
-        private int _index;
-        private bool _isOtherPress;
-        private bool _isRun;
+        public List<Keys> KeyList { get; }
+        public HotKeyType KeyType { get; }
+        public int ModuleId { get; }
 
         public bool Check { get; private set; }
-       
 
-        public HotKey(List<Keys> keyses, HotKeyEventType eventType, bool isEnableHandled = true,
-            HotKeyType type = HotKeyType.Press, bool isOtherNotPress = false)
+        private bool HotKeyEvent(bool isDown)
         {
-            KeyList = keyses;
-            EventType = eventType;
-            Type = type;
-            IsOtherNotPress = isOtherNotPress;
-            IsEnableHandled = isEnableHandled && (type == HotKeyType.Press || type == HotKeyType.Hold);
+            bool isRun = false;
+            EventLayer.HotKeyEvent(ModuleId, isDown, ref isRun);
+            return isRun;
+        }
 
-            _isOtherPress = false;
-            _index = 0;
+        public HotKey(List<Keys> keyses, HotKeyType type, int moduleId)
+        {
+            if (type.HasFlag(HotKeyType.Press | HotKeyType.Hold))
+            {
+                type &= ~HotKeyType.IsEnableHandled;
+            }
+            KeyList = keyses;
+            KeyType = type;
+            ModuleId = moduleId;
             Check = false;
         }
 
-        public void KeyChanged(List<Keys> keyses, ChangedType ct, ref bool handled)
+        public void KeyDown(bool isExclusive, ref bool handled)
         {
-            switch (ct)
+            if (!KeyType.HasFlag(HotKeyType.IsOtherNotPress) || isExclusive)
             {
-                case ChangedType.Down:
-                    _isRun = false;
-                    if (IsEqually(keyses))
-                    {
-                        switch (Type)
-                        {
-                            case HotKeyType.Press:
-                            case HotKeyType.Hold:
-                                EventLayer.HotKeyEvent(EventType,true,ref _isRun);
-                                break;
+                handled = (KeyType.HasFlag(HotKeyType.Press | HotKeyType.Hold) &&
+                           HotKeyEvent(true) &&
+                           KeyType.HasFlag(HotKeyType.IsEnableHandled)) || handled;
 
-                        }
-                        Check = true;
-                    }
-                    else
-                    {
-                        if (Check && Type == HotKeyType.Hold) EventLayer.HotKeyEvent(EventType, false, ref _isRun);
-                        Check = false;
-                    }
-                    break;
-                case ChangedType.Repeat:
-                    if (Check && Type == HotKeyType.Hold) EventLayer.HotKeyEvent(EventType, true,ref _isRun);
-                    if (Check && Type == HotKeyType.ReleaseNotHold) Check = false;
-                    break;
-                case ChangedType.Up:
-                    _isRun = false;
-                    if (IsOtherNotPress) --_index;
-                    if (Check && Type == HotKeyType.Hold)
-                    {
-                        EventLayer.HotKeyEvent(EventType, false, ref _isRun);
-                        Check = false;
-                    }
-                    if (keyses.Count == 0)
-                    {
-                        if(Check && (Type == HotKeyType.Release || Type == HotKeyType.ReleaseNotHold))
-                            EventLayer.HotKeyEvent(EventType, true, ref _isRun);
-                        _isOtherPress = false;
-                        _index = 0;
-                        Check = false;
-                    }
-                    break;
+                Check = !KeyType.HasFlag(HotKeyType.Press);
             }
-            if (_isRun && IsEnableHandled) handled = true;
         }
 
-
-        private bool IsEqually(List<Keys> keyses)
+        public void KeyNotEqually(bool isDown, int count)
         {
-            if (IsOtherNotPress)
+            if (KeyType.HasFlag(HotKeyType.Hold))
             {
-                if (!_isOtherPress &&
-                    keyses.Count == _index + 1 &&
-                    _index < KeyList.Count &&
-                    keyses[_index] == KeyList[_index])
-                {
-                    _index++;
-                    return _index == KeyList.Count;
-                }
-                _isOtherPress = true;
-                return false;
+                HotKeyEvent(false);
+                Check = false;
+            }
+            else if (count == 0)
+            {
+                HotKeyEvent(true);
+                Check = false;
             }
             else
-            {
-                _index = 0;
-                if (keyses.Count == KeyList.Count)
-                {
-                    foreach (var key in keyses)
-                    {
-                        if (key != KeyList[_index]) return false;
-                        _index++;
-                    }
-                }
-                return true;
-            }
+                Check = !isDown;
+        }
+
+        public void KeyRepeat()
+        {
+            if (KeyType.HasFlag(HotKeyType.Hold)) HotKeyEvent(true);
+            if (KeyType.HasFlag(HotKeyType.ReleaseNotHold)) Check = false;
         }
     }
 
 
-
-    public enum ChangedType
+    [Flags]
+    public enum HotKeyType : int
     {
-        Down = 0,
-        Up = 1,
-        Repeat = 3,
+        Press = 1,
+        Hold = 2,
+        Release = 4,
+        ReleaseNotHold = 8,
+        IsOtherNotPress = 256,
+        IsEnableHandled = 512,
+        Mask = 127
     }
 
-
-    public enum HotKeyType
-    {
-        Press,
-        Hold,
-        Release,
-        ReleaseNotHold
-    }
-
-   
 }

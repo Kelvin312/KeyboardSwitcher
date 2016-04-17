@@ -57,6 +57,7 @@
     <Compile Include="HotKeys\KeyboardHook.cs" />
     <Compile Include="HotKeys\LowLevelHook.cs" />
     <Compile Include="HotKeys\MouseHook.cs" />
+    <Compile Include="MixerControl.cs" />
     <Compile Include="MyModules.cs" />
     <Compile Include="UI\SettingsForm.cs">
       <SubType>Form</SubType>

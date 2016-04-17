@@ -203,8 +203,8 @@ namespace KeyboardSwitcher
 
         public void SendMouseWheel(MouseEventArgs e)
         {
-            var wParam = (IntPtr)((e.Delta << 16) /*| mkKeyState*/);
-            var lParam = (IntPtr)((e.X & 0xFFFF) | (e.Y << 16));
+            var wParam = new IntPtr((e.Delta << 16) /*| mkKeyState*/);
+            var lParam = new IntPtr((e.X & 0xFFFF) | (e.Y << 16));
             PostMessage(new HandleRef(this, HWnd), WM_MOUSEWHEEL, wParam, lParam);
         }
 

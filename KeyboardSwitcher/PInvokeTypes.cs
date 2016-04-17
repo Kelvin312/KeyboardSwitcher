@@ -5,6 +5,8 @@ using System.Runtime.InteropServices;
 
 namespace KeyboardSwitcher
 {
+#pragma warning disable 0660
+#pragma warning disable 0661
     /// <summary>
     /// Wrapper around the Winapi POINT type.
     /// </summary>
@@ -60,6 +62,9 @@ namespace KeyboardSwitcher
             return (left.X == right.X) && (left.Y == right.Y);
         }
     }
+
+#pragma warning restore 0661
+#pragma warning restore 0660
 
     /// <summary>
     /// Wrapper around the Winapi RECT type.

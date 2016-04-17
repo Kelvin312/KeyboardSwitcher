@@ -17,7 +17,7 @@ namespace KeyboardSwitcher
             
         }
 
-        public static void HotKeyEvent(HotKeyEventType eventType, bool isDown, ref bool isRun)
+        public static void HotKeyEvent(int moduleId, bool isDown, ref bool isRun)
         {
             
         }
