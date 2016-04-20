@@ -178,7 +178,7 @@ namespace KeyboardSwitcher
             }
             set
             {
-                PostMessage(new HandleRef(this, HWnd), WM_INPUTLANGCHANGEREQUEST,
+                PostThreadMessage(ThreadId, WM_INPUTLANGCHANGEREQUEST,
                     new IntPtr(INPUTLANGCHANGE_SYSCHARSET),
                     LoadKeyboardLayout($"{value.LCID:X8}", KLF_ACTIVATE));
                 _keyboardLayout = null;
@@ -369,6 +369,9 @@ namespace KeyboardSwitcher
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern bool PostMessage(HandleRef hWnd, int Msg, IntPtr wParam, IntPtr lParam);
 
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll", SetLastError = true)]
+         static extern bool PostThreadMessage(int threadId, int Msg, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll")]
          static extern IntPtr GetKeyboardLayout(int idThread);

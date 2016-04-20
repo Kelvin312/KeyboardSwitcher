@@ -11,13 +11,14 @@ namespace KeyboardSwitcher.HotKeys
         public List<Keys> KeyList { get; }
         public HotKeyType KeyType { get; }
         public int ModuleId { get; }
+        public int Param { get; }
 
         public bool Check { get; private set; }
 
         private bool HotKeyEvent(bool isDown)
         {
             bool isRun = false;
-            EventLayer.HotKeyEvent(ModuleId, isDown, ref isRun);
+            MyModules.HotKeyEvent(ModuleId, isDown, ref isRun);
             return isRun;
         }
 

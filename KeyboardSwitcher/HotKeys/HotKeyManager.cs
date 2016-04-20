@@ -64,7 +64,7 @@ namespace KeyboardSwitcher.HotKeys
             int count = _keyList.Count - 1;
             var index = _keyList.LastIndexOf(key);
             _isExclusive = 0 == count;
-            _handled = index == count;
+            _handled = (index == count) && _handled;
             if (index < 0 || index > count)
             {
                 throw new Exception("Ошибка HKM, отпущена не нажатая кнопка");
@@ -111,8 +111,13 @@ namespace KeyboardSwitcher.HotKeys
             }
             else
             {
-                MyModules.XWheel(e);
+                MyModules._XWheelModule.MouseWheel(e);
             }
+        }
+
+        private void _mouseHook_MouseMove(object sender, MouseEventExtArgs e)
+        {
+            MyModules._XMoveModule.MouseMove(e.Location);
         }
 
         public void InitHook()
@@ -123,7 +128,7 @@ namespace KeyboardSwitcher.HotKeys
             _keyboardHook.KeyDown += KeyboardHook_KeyDown;
             _keyboardHook.KeyUp += KeyboardHook_KeyUp;
 
-            _mouseHook.MouseMove += MyModules.MouseMove;
+            _mouseHook.MouseMove += _mouseHook_MouseMove;
             _mouseHook.StartHook();
             _keyboardHook.StartHook();
         }
@@ -136,7 +141,7 @@ namespace KeyboardSwitcher.HotKeys
             _keyboardHook.KeyDown -= KeyboardHook_KeyDown;
             _keyboardHook.KeyUp -= KeyboardHook_KeyUp;
 
-            _mouseHook.MouseMove -= MyModules.MouseMove;
+            _mouseHook.MouseMove -= _mouseHook_MouseMove;
             _mouseHook.Unhook();
             _keyboardHook.Unhook();
         }

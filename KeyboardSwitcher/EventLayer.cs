@@ -6,25 +6,5 @@ using KeyboardSwitcher.HotKeys;
 
 namespace KeyboardSwitcher
 {
-    public static class EventLayer
-    {
-        private static HotKeyManager hotKeyManager = new HotKeyManager();
-        private static MyModules myModules = new MyModules();
-
-
-        public static void RunProgramm()
-        {
-            
-        }
-
-        public static void HotKeyEvent(int moduleId, bool isDown, ref bool isRun)
-        {
-            
-        }
-
-    }
-    public enum HotKeyEventType
-    {
-        a, b, c
-    }
+   
 }

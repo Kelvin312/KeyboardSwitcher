@@ -9,27 +9,7 @@ namespace KeyboardSwitcher
     internal class MixerControl
     {
 
-        static void Main(string[] args)
-        {
-            const string app = "Mozilla Firefox";
-
-            foreach (string name in EnumerateApplications())
-            {
-                Console.WriteLine("name:" + name);
-                if (name == app)
-                {
-                    // display mute state & volume level (% of master)
-                    Console.WriteLine("Mute:" + GetApplicationMute(app));
-                    Console.WriteLine("Volume:" + GetApplicationVolume(app));
-
-                    // mute the application
-                    SetApplicationMute(app, true);
-
-                    // set the volume to half of master volume (50%)
-                    SetApplicationVolume(app, 50);
-                }
-            }
-        }
+     
 
         public static float? GetApplicationVolume(string name)
         {

@@ -11,7 +11,7 @@ namespace KeyboardSwitcher
 {
 
     [Flags]
-    internal enum TextReplaceMethod
+    public enum TextReplaceMethod
     {
         Off = 0,
         Default = 1,
