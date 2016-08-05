@@ -162,22 +162,20 @@ namespace PostSwitcher
                 ProcessAccessFlags.QueryInformation | ProcessAccessFlags.Synchronize, false, _window.ProcessId));
             if (hProcess == IntPtr.Zero) return false;
 
-            for (var i = 0; i < keys.Count - 1; i++)
+            for (var i = 0; i < keys.Count; i++)
             {
-                SendKeyToApp(hProcess, keys[i], true, true);
+                SendKeyToApp(hProcess, keys[i], true, IsSystemKey(keys[i]));
             }
-            SendKeyToApp(hProcess, keys[keys.Count - 1], true, false);
-            SendKeyToApp(hProcess, keys[keys.Count - 1], false, false);
-            for (var i = keys.Count - 2; i >= 0; i--)
+            for (var i = keys.Count - 1; i >= 0; i--)
             {
-                SendKeyToApp(hProcess, keys[i], false, true);
+                SendKeyToApp(hProcess, keys[i], false, IsSystemKey(keys[i]));
             }
 
             CloseHandle(hProcess);
             return true;
         }
 
-        private void SendKeyToApp(IntPtr hProcess, Keys key, bool isDown, bool isSys)
+        private bool SendKeyToApp(IntPtr hProcess, Keys key, bool isDown, bool isSys)
         {
             var keyFlag = (MapVirtualKey((uint) key, MapTypes.MAPVK_VK_TO_VSC) << 16) | 1;
             var keyUpFlag = (1u << 31) | (1u << 30);
@@ -191,7 +189,7 @@ namespace PostSwitcher
                 PostMessage(_window.HWnd, isSys ? Msg.WM_SYSKEYUP : Msg.WM_KEYUP,
                     new IntPtr((uint) key), new IntPtr(keyFlag | keyUpFlag));
             }
-            WaitForInputIdle(hProcess, 50);
+            return WaitForInputIdle(hProcess, 50) == 0;
         }
 
         private void PressKeys(IList<Keys> keys, bool isScan = true, int sleep = 40) //Нажимает последовательность клавиш 
@@ -208,6 +206,22 @@ namespace PostSwitcher
                 inputs[i] = MakeKeyInput(keys[i], false, isScan);
             }
             SendInput((uint) keys.Count, inputs, Marshal.SizeOf(typeof (INPUT)));
+        }
+
+        private bool IsSystemKey(Keys vkCode)
+        {
+            return
+                vkCode == Keys.Menu ||
+                vkCode == Keys.LMenu ||
+                vkCode == Keys.RMenu ||
+                vkCode == Keys.ControlKey ||
+                vkCode == Keys.LControlKey ||
+                vkCode == Keys.RControlKey ||
+                vkCode == Keys.ShiftKey ||
+                vkCode == Keys.LShiftKey ||
+                vkCode == Keys.RShiftKey ||
+                vkCode == Keys.LWin ||
+                vkCode == Keys.RWin;
         }
 
         private bool IsExtendedKey(Keys vkCode)
