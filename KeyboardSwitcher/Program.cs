@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using KeyboardSwitcher.UI;
 
 namespace KeyboardSwitcher
 {
@@ -15,7 +16,7 @@ namespace KeyboardSwitcher
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new SettingsForm());
+            Application.Run(new TestForm());
         }
     }
 }

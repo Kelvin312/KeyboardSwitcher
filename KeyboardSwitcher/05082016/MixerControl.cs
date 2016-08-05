@@ -5,20 +5,20 @@ namespace PostSwitcher
 {
     internal class MixerControl
     {
-        private readonly IAudioEndpointVolume _volume;
+        private  IAudioEndpointVolume _volume;
 
         public MixerControl()
         {
             // Получаем аудио устройство
-            IMMDeviceEnumerator deviceEnumerator = (IMMDeviceEnumerator) (new MMDeviceEnumerator());
+            IMMDeviceEnumerator deviceEnumerator = (IMMDeviceEnumerator)(new MMDeviceEnumerator());
             IMMDevice speakers;
             deviceEnumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out speakers);
 
             // Активируем менеджер сессий, нам нужен главный регулятор громкости
-            Guid IID_IAudioEndpointVolume = typeof (IAudioEndpointVolume).GUID;
+            Guid IID_IAudioEndpointVolume = typeof(IAudioEndpointVolume).GUID;
             object o;
             speakers.Activate(ref IID_IAudioEndpointVolume, 0, IntPtr.Zero, out o);
-            _volume = (IAudioEndpointVolume) o;
+            _volume = (IAudioEndpointVolume)o;
 
             Marshal.ReleaseComObject(speakers);
             Marshal.ReleaseComObject(deviceEnumerator);
@@ -88,7 +88,7 @@ namespace PostSwitcher
         {
             [PreserveSig]
             int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams,
-                [Out(), MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
+                [Out, MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
 
         }
 
@@ -96,9 +96,12 @@ namespace PostSwitcher
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IMMDeviceEnumerator
         {
+            //[PreserveSig]
+            //int EnumAudioEndpoints(EDataFlow dataFlow, DEVICE_STATE StateMask, out IMMDeviceCollection device);
+            int NotImpl1();
+
             [PreserveSig]
             int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice ppEndpoint);
-
         }
 
         [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
