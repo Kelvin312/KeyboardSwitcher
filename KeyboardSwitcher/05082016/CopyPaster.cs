@@ -156,18 +156,19 @@ namespace PostSwitcher
             PressKeys(new Keys[] {Keys.ControlKey, Keys.V});
         }
 
-        private bool SendKeys(Keys[] keys)
+        private bool SendKeys(IList<Keys> keys)
         {
-            var hProcess = OpenProcess(ProcessAccessFlags.QueryInformation | ProcessAccessFlags.Synchronize, false, _window.ProcessId);
+            var hProcess = ApiHelper.FailIfZero(OpenProcess(
+                ProcessAccessFlags.QueryInformation | ProcessAccessFlags.Synchronize, false, _window.ProcessId));
             if (hProcess == IntPtr.Zero) return false;
 
-            for (var i = 0; i < keys.Length - 1; i++)
+            for (var i = 0; i < keys.Count - 1; i++)
             {
                 SendKeyToApp(hProcess, keys[i], true, true);
             }
-            SendKeyToApp(hProcess, keys[keys.Length - 1], true, false);
-            SendKeyToApp(hProcess, keys[keys.Length - 1], false, false);
-            for (var i = keys.Length - 2; i >= 0; i--)
+            SendKeyToApp(hProcess, keys[keys.Count - 1], true, false);
+            SendKeyToApp(hProcess, keys[keys.Count - 1], false, false);
+            for (var i = keys.Count - 2; i >= 0; i--)
             {
                 SendKeyToApp(hProcess, keys[i], false, true);
             }
@@ -193,20 +194,20 @@ namespace PostSwitcher
             WaitForInputIdle(hProcess, 50);
         }
 
-        private void PressKeys(Keys[] keys, bool isScan = true, int sleep = 40) //Нажимает последовательность клавиш 
+        private void PressKeys(IList<Keys> keys, bool isScan = true, int sleep = 40) //Нажимает последовательность клавиш 
         {
-            var inputs = new INPUT[keys.Length];
-            for (var i = 0; i < keys.Length; i++)
+            var inputs = new INPUT[keys.Count];
+            for (var i = 0; i < keys.Count; i++)
             {
                 inputs[i] = MakeKeyInput(keys[i], true, isScan);
             }
-            SendInput((uint) keys.Length, inputs, Marshal.SizeOf(typeof (INPUT)));
+            SendInput((uint) keys.Count, inputs, Marshal.SizeOf(typeof (INPUT)));
             Thread.Sleep(sleep); //25 ms мало
-            for (var i = keys.Length - 1; i >= 0; i--)
+            for (var i = keys.Count - 1; i >= 0; i--)
             {
                 inputs[i] = MakeKeyInput(keys[i], false, isScan);
             }
-            SendInput((uint) keys.Length, inputs, Marshal.SizeOf(typeof (INPUT)));
+            SendInput((uint) keys.Count, inputs, Marshal.SizeOf(typeof (INPUT)));
         }
 
         private bool IsExtendedKey(Keys vkCode)
