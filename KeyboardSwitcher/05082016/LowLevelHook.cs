@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace PostSwitcher
 {
-    internal class LowLevelHook : IDisposable
+    internal class LowLevelHook
     {
         private HookType _type;
         private HookCallback _callback;
@@ -46,11 +46,6 @@ namespace PostSwitcher
                 return new IntPtr(-1);
             }
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
-        }
-
-        public void Dispose()
-        {
-            Unhook();
         }
 
         ~LowLevelHook()

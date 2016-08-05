@@ -162,6 +162,9 @@ namespace PostSwitcher
                 ProcessAccessFlags.QueryInformation | ProcessAccessFlags.Synchronize, false, _window.ProcessId));
             if (hProcess == IntPtr.Zero) return false;
 
+            var currentThreadId = GetCurrentThreadId();
+            AttachThreadInput(currentThreadId, _window.ThreadId, true);
+
             for (var i = 0; i < keys.Count; i++)
             {
                 SendKeyToApp(hProcess, keys[i], true, IsSystemKey(keys[i]));
@@ -171,26 +174,37 @@ namespace PostSwitcher
                 SendKeyToApp(hProcess, keys[i], false, IsSystemKey(keys[i]));
             }
 
+            AttachThreadInput(currentThreadId, _window.ThreadId, false);
+
             CloseHandle(hProcess);
             return true;
         }
 
-        private bool SendKeyToApp(IntPtr hProcess, Keys key, bool isDown, bool isSys)
+        private void SendKeyToApp(IntPtr hProcess, Keys key, bool isDown, bool isSysKey)
         {
             var keyFlag = (MapVirtualKey((uint) key, MapTypes.MAPVK_VK_TO_VSC) << 16) | 1;
             var keyUpFlag = (1u << 31) | (1u << 30);
+
             if (isDown)
             {
-                PostMessage(_window.HWnd, isSys ? Msg.WM_SYSKEYDOWN : Msg.WM_KEYDOWN,
+                PostMessage(_window.HWnd, isSysKey ? Msg.WM_SYSKEYDOWN : Msg.WM_KEYDOWN,
                     new IntPtr((uint) key), new IntPtr(keyFlag));
             }
             else
             {
-                PostMessage(_window.HWnd, isSys ? Msg.WM_SYSKEYUP : Msg.WM_KEYUP,
+                PostMessage(_window.HWnd, isSysKey ? Msg.WM_SYSKEYUP : Msg.WM_KEYUP,
                     new IntPtr((uint) key), new IntPtr(keyFlag | keyUpFlag));
             }
-            return WaitForInputIdle(hProcess, 50) == 0;
+
+            //@Hryak http://forum.sources.ru/index.php?showtopic=184180&st=15&#entry1555890
+            WaitForInputIdle(hProcess, 50);
+
+            byte[] state = new byte[256];
+            GetKeyboardState(state);
+            state[(int) key & 0xFF] = (byte) (isDown ? 0x80 : 0x00);
+            SetKeyboardState(state);
         }
+
 
         private void PressKeys(IList<Keys> keys, bool isScan = true, int sleep = 40) //Нажимает последовательность клавиш 
         {
@@ -339,6 +353,18 @@ namespace PostSwitcher
 
         [DllImport("user32.dll")]
         private static extern uint WaitForInputIdle(IntPtr hProcess, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll")]
+        private static extern int GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        private static extern bool AttachThreadInput(int idAttach, int idAttachTo, bool fAttach);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool GetKeyboardState(byte[] lpKeyState);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetKeyboardState(byte[] lpKeyState);
 
         private enum Msg : int
         {
