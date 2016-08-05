@@ -1,34 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Forms;
 
-namespace KeyboardSwitcher.HotKeys
+namespace PostSwitcher
 {
     internal class KeyboardHook : LowLevelHook
     {
         public event KeyEventHandler KeyDown;
         public event KeyEventHandler KeyUp;
 
-        public KeyboardHook() : base(HookType.WH_KEYBOARD_LL)
+        public KeyboardHook()
         {
-            base.Callback = KeyboardCallback;
-        }
-
-        public void TryUnhook()
-        {
-            if (KeyDown == null &&
-                KeyUp == null)
-            {
-                base.Unhook();
-            }
+            base.InitLowLevelHook(HookType.WH_KEYBOARD_LL, KeyboardCallback);
         }
 
         private bool KeyboardCallback(IntPtr wParam, IntPtr lParam)
         {
-            KeyboardHookStruct keyboardHookStruct = (KeyboardHookStruct)Marshal.PtrToStructure(lParam, typeof(KeyboardHookStruct));
+            var keyboardHookStruct = (KeyboardHookStruct)Marshal.PtrToStructure(lParam, typeof(KeyboardHookStruct));
             var e = new KeyEventArgs((Keys)keyboardHookStruct.VirtualKeyCode);
 
             switch ((Messages) wParam)

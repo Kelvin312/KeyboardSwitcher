@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -257,7 +258,7 @@ namespace KeyboardSwitcher
         public static XMoveModule _XMoveModule = new XMoveModule();
         public static TextSwitchModule _TextSwitchModule = new TextSwitchModule();
 
-        public static void RunProgramm()
+        public static void RunProgramm(BackgroundWorker worker, DoWorkEventArgs e)
         {
             _hotKeyManager.InitHook();
         }

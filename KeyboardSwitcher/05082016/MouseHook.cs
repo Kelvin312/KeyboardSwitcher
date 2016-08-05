@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
-namespace KeyboardSwitcher.HotKeys
+namespace PostSwitcher
 {
     internal class MouseHook : LowLevelHook
     {
@@ -17,35 +17,21 @@ namespace KeyboardSwitcher.HotKeys
 
         private POINT _oldPoint;
 
-        public MouseHook() : base(HookType.WH_MOUSE_LL)
+        public MouseHook() 
         {
-            base.Callback = MouseCallback;
+            InitLowLevelHook(HookType.WH_MOUSE_LL, MouseCallback);
         }
 
-        public new void StartHook()
+        public new void SetHook()
         {
-            if (!IsHooked)
-            {
-                _oldPoint = new POINT(-1, -1);
-                base.StartHook();
-            }
-        }
-        public void TryUnhook()
-        {
-            if (MouseDown == null &&
-                MouseMove == null &&
-                MouseUp == null &&
-                MouseWheel == null)
-            {
-                base.Unhook();
-            }
+            if (IsHooked) return;
+            _oldPoint = new POINT(-1, -1);
+            base.SetHook();
         }
 
         private bool MouseCallback(IntPtr wParam, IntPtr lParam)
         {
-
-            MouseLLHookStruct mouseHookStruct = (MouseLLHookStruct)
-                Marshal.PtrToStructure(lParam, typeof (MouseLLHookStruct));
+            var mouseHookStruct = (MouseLLHookStruct)Marshal.PtrToStructure(lParam, typeof (MouseLLHookStruct));
 
             MouseButtons button = MouseButtons.None;
             Keys keyCode = Keys.None;
@@ -147,13 +133,12 @@ namespace KeyboardSwitcher.HotKeys
                 MouseWheel.Invoke(null, e);
             }
 
-            //If someone listens to move and there was a change in coordinates raise move event
-            if (_oldPoint != mouseHookStruct.Point)
+            if (MouseMove != null && !_oldPoint.Equals(mouseHookStruct.Point))
             {
-                _oldPoint = mouseHookStruct.Point;
-                MouseMove?.Invoke(null, e);
+                MouseMove.Invoke(null, e);
             }
 
+            _oldPoint = mouseHookStruct.Point;
             return e.Handled;
         }
 
@@ -179,10 +164,6 @@ namespace KeyboardSwitcher.HotKeys
         {
             KeyCode = keyCode;
             Handled = false;
-        }
-
-        internal MouseEventExtArgs(MouseEventArgs e) : base(e.Button, e.Clicks, e.X, e.Y, e.Delta)
-        {
         }
 
         public Keys KeyCode { get; }

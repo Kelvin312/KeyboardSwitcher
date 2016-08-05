@@ -2,53 +2,41 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace KeyboardSwitcher.HotKeys
+namespace PostSwitcher
 {
     internal class LowLevelHook : IDisposable
     {
-        private readonly HookType _type;
+        private HookType _type;
         private HookCallback _callback;
         private IntPtr _hHook;
 
         protected delegate bool HookCallback(IntPtr wParam, IntPtr lParam);
 
-        protected LowLevelHook(HookType type)
+        protected void InitLowLevelHook(HookType type, HookCallback callback)
         {
             _type = type;
+            _callback = callback;
             _hHook = IntPtr.Zero;
         }
 
-        protected HookCallback Callback
-        {
-            set { _callback = value; }
-        }
+        public bool IsHooked => _hHook != IntPtr.Zero;
 
-        public bool IsHooked
+        public void SetHook()
         {
-            get { return _hHook != IntPtr.Zero; }
-        }
-
-        public void StartHook()
-        {
-            if (_hHook == IntPtr.Zero && _callback != null)
-            {
-                HookProcedure hookProcedure = InternalCallback;
-
-                _hHook = ApiHelper.FailIfZero(SetWindowsHookEx(
-                    _type,
-                    hookProcedure,
-                    Process.GetCurrentProcess().MainModule.BaseAddress,
-                    0));
-            }
+            if (_hHook != IntPtr.Zero) return;
+            _hHook = ApiHelper.FailIfZero(
+                SetWindowsHookEx(
+                _type,
+                InternalCallback,
+                Process.GetCurrentProcess().MainModule.BaseAddress,
+                0));
         }
 
         public void Unhook()
         {
-            if (_hHook != IntPtr.Zero)
-            {
-                ApiHelper.FailIfZero(UnhookWindowsHookEx(_hHook));
-                _hHook = IntPtr.Zero;
-            }
+            if (_hHook == IntPtr.Zero) return;
+            ApiHelper.FailIfZero(UnhookWindowsHookEx(_hHook));
+            _hHook = IntPtr.Zero;
         }
 
         private IntPtr InternalCallback(int nCode, IntPtr wParam, IntPtr lParam)
@@ -61,6 +49,11 @@ namespace KeyboardSwitcher.HotKeys
         }
 
         public void Dispose()
+        {
+            Unhook();
+        }
+
+        ~LowLevelHook()
         {
             Unhook();
         }
