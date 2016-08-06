@@ -121,7 +121,7 @@ namespace PostSwitcher
         public bool CopyTextPressKeys(ref string selectedText)
         {
             int oldId = GetClipboardSequenceNumber();
-            PressKeys(new Keys[] {Keys.ControlKey, Keys.C});
+            PressKeys(new Keys[] { Keys.ControlKey, Keys.C });
             int newId = GetClipboardSequenceNumber();
             if (oldId == newId) return false;
             selectedText = Clipboard.GetText();
@@ -158,6 +158,8 @@ namespace PostSwitcher
 
         private bool SendKeys(IList<Keys> keys)
         {
+           // Thread.Sleep(10);
+
             var hProcess = ApiHelper.FailIfZero(OpenProcess(
                 ProcessAccessFlags.QueryInformation | ProcessAccessFlags.Synchronize, false, _window.ProcessId));
             if (hProcess == IntPtr.Zero) return false;
@@ -177,6 +179,8 @@ namespace PostSwitcher
             AttachThreadInput(currentThreadId, _window.ThreadId, false);
 
             CloseHandle(hProcess);
+
+            //Thread.Sleep(10);
             return true;
         }
 
@@ -197,12 +201,19 @@ namespace PostSwitcher
             }
 
             //@Hryak http://forum.sources.ru/index.php?showtopic=184180&st=15&#entry1555890
-            WaitForInputIdle(hProcess, 50);
 
-            byte[] state = new byte[256];
-            GetKeyboardState(state);
-            state[(int) key & 0xFF] = (byte) (isDown ? 0x80 : 0x00);
-            SetKeyboardState(state);
+            Thread.Sleep(1);
+
+            WaitForInputIdle(hProcess, 50); //!!!!!!!!!!!!!!!!!!
+            if (isDown && isSysKey)
+            {
+                byte[] state = new byte[256];
+                GetKeyboardState(state);
+                state[(int) key & 0xFF] = (byte) (isDown ? 0x80 : 0x00);
+                SetKeyboardState(state);
+            }
+
+             // WaitForInputIdle(hProcess, 50);
         }
 
 
@@ -272,12 +283,12 @@ namespace PostSwitcher
                 {
                     wVk = isScan ? (ushort) 0 : (ushort) vkCode,
                     wSc = isScan ? (ushort) MapVirtualKey((uint) vkCode, MapTypes.MAPVK_VK_TO_VSC) : (ushort) 0,
-                    Flags = (isScan
+                    Flags = (uint)((isScan
                         ? KeyEventFlag.ScanCode
                         : (IsExtendedKey(vkCode) ? KeyEventFlag.ExtendedKey : KeyEventFlag.None)
-                        ) | (isDown ? KeyEventFlag.None : KeyEventFlag.KeyUp),
+                        ) | (isDown ? KeyEventFlag.None : KeyEventFlag.KeyUp)),
                     Time = 0,
-                    dwExtraInfo = 0
+                    dwExtraInfo = IntPtr.Zero
                 }
             };
         }
@@ -361,6 +372,7 @@ namespace PostSwitcher
         private static extern bool AttachThreadInput(int idAttach, int idAttachTo, bool fAttach);
 
         [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetKeyboardState(byte[] lpKeyState);
 
         [DllImport("user32.dll")]
@@ -400,21 +412,21 @@ namespace PostSwitcher
             Unicode = 0x0004
         }
 
-        [StructLayout(LayoutKind.Explicit, Pack = 1)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct INPUT
         {
-            [FieldOffset(0)] public uint type;
-            [FieldOffset(4)] public KEYBOARD_INPUT ki;
+            public uint type;
+            public KEYBOARD_INPUT ki;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct KEYBOARD_INPUT
         {
             public ushort wVk;
             public ushort wSc;
-            public KeyEventFlag Flags;
+            public uint Flags;
             public uint Time;
-            public uint dwExtraInfo;
+            public IntPtr dwExtraInfo;
             public uint Padding1;
             public uint Padding2;
         }

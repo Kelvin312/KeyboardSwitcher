@@ -207,7 +207,7 @@ namespace PostSwitcher
             {
                 using (Graphics g = windowDC.CreateGraphics())
                 {
-                    g.DrawRectangle(new Pen(color, 4), 0, 0, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                    g.DrawRectangle(new Pen(color, 4), 0, 0, rect.Width, rect.Height);
                 }
             }
         }
