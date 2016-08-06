@@ -135,11 +135,7 @@ namespace KeyboardSwitcher.UI
         {
             textBox2.Text = "";
             CopyPaster cp = new CopyPaster(wnd);
-            string text = "";
-            bool res = cp.CopyTextSendKeys(ref text);
-            textBox2.Text = res.ToString() + "\r\n" + text;
-            text = "{хаХа 159 vBn}";
-            if(res) cp.PasteTextSendKeys(text);
+            cp.ReplaceLastWord();
         }
 
         private void button5_Click(object sender, EventArgs e)

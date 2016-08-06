@@ -55,6 +55,8 @@
     <Compile Include="05082016\LowLevelHook.cs" />
     <Compile Include="05082016\MouseHook.cs" />
     <Compile Include="05082016\MixerControl.cs" />
+    <Compile Include="KeyBinding\BindingItem.cs" />
+    <Compile Include="KeyBinding\BindingManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="05082016\SystemWindow.cs" />
@@ -91,9 +93,7 @@
     <Content Include="Icons\close.png" />
     <Content Include="Icons\settings.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="HotKeys\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

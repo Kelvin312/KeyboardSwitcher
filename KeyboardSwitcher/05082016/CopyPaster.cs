@@ -7,7 +7,6 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using ThreadState = System.Diagnostics.ThreadState;
 
 namespace PostSwitcher
 {
@@ -110,15 +109,7 @@ namespace PostSwitcher
             return true;
         }
 
-        public bool CopyTextSendKeys(ref string selectedText)
-        {
-            int oldId = GetClipboardSequenceNumber();
-            if (!SendKeys(new Keys[] {Keys.ControlKey, Keys.C})) return false;
-            int newId = GetClipboardSequenceNumber();
-            if (oldId == newId) return false;
-            selectedText = Clipboard.GetText();
-            return true;
-        }
+       
 
         public bool CopyTextPressKeys(ref string selectedText)
         {
@@ -146,11 +137,7 @@ namespace PostSwitcher
             SendMessage(_window.HWnd, Msg.WM_PASTE, IntPtr.Zero, IntPtr.Zero);
         }
 
-        public void PasteTextSendKeys(string text)
-        {
-            Clipboard.SetText(text);
-            SendKeys(new Keys[] { Keys.ControlKey, Keys.V });
-        }
+      
 
         public void PasteTextPressKeys(string text)
         {
@@ -158,32 +145,53 @@ namespace PostSwitcher
             PressKeys(new Keys[] {Keys.ControlKey, Keys.V});
         }
 
-        private bool SendKeys(IList<Keys> keys) //Крайне глючный метод! 
+
+        public void ReplaceLastWord(string text="", int charCount=1, int wordCount=1)
+        {
+            SendKeys(new Keys[] {Keys.ControlKey, Keys.ShiftKey, Keys.Left, Keys.Left});
+        }
+
+
+        private bool SendKeys(IList<Keys> keys, int sleep = 5) 
         {
             var hProcess = ApiHelper.FailIfZero(OpenProcess(
                 ProcessAccessFlags.QueryInformation | ProcessAccessFlags.Synchronize, false, _window.ProcessId));
             if (hProcess == IntPtr.Zero) return false;
+
             var currentThreadId = GetCurrentThreadId();
             AttachThreadInput(currentThreadId, _window.ThreadId, true);
 
             for (var i = 0; i < keys.Count; i++)
-            {
-                SendKeyToApp(hProcess, keys[i], true, IsSystemKey(keys[i]));
-            }
-            for (var i = keys.Count - 1; i >= 0; i--)
-            {
-                SendKeyToApp(hProcess, keys[i], false, IsSystemKey(keys[i]));
-            }
+                if (IsModifierKey(keys[i]))
+                    SendKeyToApp(hProcess, keys[i], true);
 
+            for (var i = 0; i < keys.Count; i++)
+                if (!IsModifierKey(keys[i]))
+                {
+                    Thread.Sleep(sleep);
+                    SendKeyToApp(hProcess, keys[i], true);
+                    Thread.Sleep(sleep);
+                    SendKeyToApp(hProcess, keys[i], false);
+                }
+
+            for (var i = keys.Count - 1; i >= 0; i--)
+                if (IsModifierKey(keys[i]))
+                    SendKeyToApp(hProcess, keys[i], false);
+
+            Thread.Sleep(1);
+            WaitForInputIdle(hProcess, 50);
             AttachThreadInput(currentThreadId, _window.ThreadId, false);
             CloseHandle(hProcess);
             return true;
         }
 
-        private void SendKeyToApp(IntPtr hProcess, Keys key, bool isDown, bool isSysKey)
+        private void SendKeyToApp(IntPtr hProcess, Keys key, bool isDown)
         {
+            //@Hryak http://forum.sources.ru/index.php?showtopic=184180&st=15&#entry1555890
+
             var keyFlag = (MapVirtualKey((uint) key, MapTypes.MAPVK_VK_TO_VSC) << 16) | 1;
             var keyUpFlag = (1u << 31) | (1u << 30);
+            var isSysKey = key == Keys.Menu;
 
             if (isDown)
             {
@@ -196,15 +204,16 @@ namespace PostSwitcher
                     new IntPtr((uint) key), new IntPtr(keyFlag | keyUpFlag));
             }
 
-            //@Hryak http://forum.sources.ru/index.php?showtopic=184180&st=15&#entry1555890
             Thread.Sleep(1);
             WaitForInputIdle(hProcess, 50);
 
-            if (!isSysKey) return;
-            byte[] state = new byte[256];
-            GetKeyboardState(state);
-            state[(int) key & 0xFF] = (byte) (isDown ? 0x80 : 0x00);
-            SetKeyboardState(state);
+            if (IsModifierKey(key))
+            {
+                byte[] state = new byte[256];
+                GetKeyboardState(state);
+                state[(int) key & 0xFF] = (byte) (isDown ? 0x80 : 0x00);
+                SetKeyboardState(state);
+            }
         }
 
 
@@ -224,7 +233,26 @@ namespace PostSwitcher
             SendInput((uint) keys.Count, inputs, Marshal.SizeOf(typeof (INPUT)));
         }
 
-        private bool IsSystemKey(Keys vkCode)
+        private INPUT MakeKeyInput(Keys vkCode, bool isDown, bool isScan)
+        {
+            return new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                ki = new KEYBOARD_INPUT
+                {
+                    wVk = isScan ? (ushort)0 : (ushort)vkCode,
+                    wSc = isScan ? (ushort)MapVirtualKey((uint)vkCode, MapTypes.MAPVK_VK_TO_VSC) : (ushort)0,
+                    Flags = (isScan
+                        ? KeyEventFlag.ScanCode
+                        : (IsExtendedKey(vkCode) ? KeyEventFlag.ExtendedKey : KeyEventFlag.None)
+                        ) | (isDown ? KeyEventFlag.None : KeyEventFlag.KeyUp),
+                    Time = 0,
+                    dwExtraInfo = IntPtr.Zero
+                }
+            };
+        }
+
+        private bool IsModifierKey(Keys vkCode)
         {
             return
                 vkCode == Keys.Menu ||
@@ -263,25 +291,6 @@ namespace PostSwitcher
                 vkCode == Keys.Cancel ||
                 vkCode == Keys.Snapshot ||
                 vkCode == Keys.Divide;
-        }
-
-        private INPUT MakeKeyInput(Keys vkCode, bool isDown, bool isScan)
-        {
-            return new INPUT
-            {
-                type = INPUT_KEYBOARD,
-                ki = new KEYBOARD_INPUT
-                {
-                    wVk = isScan ? (ushort) 0 : (ushort) vkCode,
-                    wSc = isScan ? (ushort) MapVirtualKey((uint) vkCode, MapTypes.MAPVK_VK_TO_VSC) : (ushort) 0,
-                    Flags = (isScan
-                        ? KeyEventFlag.ScanCode
-                        : (IsExtendedKey(vkCode) ? KeyEventFlag.ExtendedKey : KeyEventFlag.None)
-                        ) | (isDown ? KeyEventFlag.None : KeyEventFlag.KeyUp),
-                    Time = 0,
-                    dwExtraInfo = IntPtr.Zero
-                }
-            };
         }
 
         #region PInvoke Declarations
