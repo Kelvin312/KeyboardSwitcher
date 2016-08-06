@@ -9,6 +9,7 @@ namespace PostSwitcher
         private HookType _type;
         private HookCallback _callback;
         private IntPtr _hHook;
+        private HookProcedure _internalCallback;
 
         protected delegate bool HookCallback(IntPtr wParam, IntPtr lParam);
 
@@ -17,6 +18,7 @@ namespace PostSwitcher
             _type = type;
             _callback = callback;
             _hHook = IntPtr.Zero;
+            _internalCallback = InternalCallback;
         }
 
         public bool IsHooked => _hHook != IntPtr.Zero;
@@ -27,7 +29,7 @@ namespace PostSwitcher
             _hHook = ApiHelper.FailIfZero(
                 SetWindowsHookEx(
                 _type,
-                InternalCallback,
+                _internalCallback,
                 Process.GetCurrentProcess().MainModule.BaseAddress,
                 0));
         }

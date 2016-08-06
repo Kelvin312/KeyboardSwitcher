@@ -38,7 +38,7 @@ namespace KeyboardSwitcher.UI
         //    switch (m.Msg)
         //    {
         //        case 0x21: //WM_MOUSEACTIVATE
-        //            m.Result = (IntPtr) 0x0003; //MA_NOACTIVATE
+        //            m.Result = (IntPtr)0x0003; //MA_NOACTIVATE
         //            return;
         //    }
         //    base.DefWndProc(ref m);
@@ -46,6 +46,7 @@ namespace KeyboardSwitcher.UI
 
         private MixerControl mc;
         private MouseHook mo;
+        private KeyboardHook ke;
         private SystemWindow wnd;
 
         private void TestForm_Load(object sender, EventArgs e)
@@ -58,6 +59,18 @@ namespace KeyboardSwitcher.UI
             mo = new MouseHook();
             mo.SetHook();
             mo.MouseDown += Mo_MouseDown;
+
+            ke = new KeyboardHook();
+            ke.SetHook();
+            ke.KeyDown += Ke_KeyDown;
+        }
+
+        private void Ke_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.LWin)
+            {
+                button4_Click(null, null);
+            }
         }
 
         private void Mo_MouseDown(object sender, MouseEventExtArgs e)
@@ -126,7 +139,7 @@ namespace KeyboardSwitcher.UI
             bool res = cp.CopyTextSendKeys(ref text);
             textBox2.Text = res.ToString() + "\r\n" + text;
             text = "{хаХа 159 vBn}";
-            cp.PasteTextSendKeys(text);
+            if(res) cp.PasteTextSendKeys(text);
         }
 
         private void button5_Click(object sender, EventArgs e)

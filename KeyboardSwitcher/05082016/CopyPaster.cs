@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using ThreadState = System.Diagnostics.ThreadState;
 
 namespace PostSwitcher
 {
@@ -156,14 +158,11 @@ namespace PostSwitcher
             PressKeys(new Keys[] {Keys.ControlKey, Keys.V});
         }
 
-        private bool SendKeys(IList<Keys> keys)
+        private bool SendKeys(IList<Keys> keys) //Крайне глючный метод! 
         {
-           // Thread.Sleep(10);
-
             var hProcess = ApiHelper.FailIfZero(OpenProcess(
                 ProcessAccessFlags.QueryInformation | ProcessAccessFlags.Synchronize, false, _window.ProcessId));
             if (hProcess == IntPtr.Zero) return false;
-
             var currentThreadId = GetCurrentThreadId();
             AttachThreadInput(currentThreadId, _window.ThreadId, true);
 
@@ -177,10 +176,7 @@ namespace PostSwitcher
             }
 
             AttachThreadInput(currentThreadId, _window.ThreadId, false);
-
             CloseHandle(hProcess);
-
-            //Thread.Sleep(10);
             return true;
         }
 
@@ -201,19 +197,14 @@ namespace PostSwitcher
             }
 
             //@Hryak http://forum.sources.ru/index.php?showtopic=184180&st=15&#entry1555890
-
             Thread.Sleep(1);
+            WaitForInputIdle(hProcess, 50);
 
-            WaitForInputIdle(hProcess, 50); //!!!!!!!!!!!!!!!!!!
-            if (isDown && isSysKey)
-            {
-                byte[] state = new byte[256];
-                GetKeyboardState(state);
-                state[(int) key & 0xFF] = (byte) (isDown ? 0x80 : 0x00);
-                SetKeyboardState(state);
-            }
-
-             // WaitForInputIdle(hProcess, 50);
+            if (!isSysKey) return;
+            byte[] state = new byte[256];
+            GetKeyboardState(state);
+            state[(int) key & 0xFF] = (byte) (isDown ? 0x80 : 0x00);
+            SetKeyboardState(state);
         }
 
 
@@ -283,10 +274,10 @@ namespace PostSwitcher
                 {
                     wVk = isScan ? (ushort) 0 : (ushort) vkCode,
                     wSc = isScan ? (ushort) MapVirtualKey((uint) vkCode, MapTypes.MAPVK_VK_TO_VSC) : (ushort) 0,
-                    Flags = (uint)((isScan
+                    Flags = (isScan
                         ? KeyEventFlag.ScanCode
                         : (IsExtendedKey(vkCode) ? KeyEventFlag.ExtendedKey : KeyEventFlag.None)
-                        ) | (isDown ? KeyEventFlag.None : KeyEventFlag.KeyUp)),
+                        ) | (isDown ? KeyEventFlag.None : KeyEventFlag.KeyUp),
                     Time = 0,
                     dwExtraInfo = IntPtr.Zero
                 }
@@ -424,7 +415,7 @@ namespace PostSwitcher
         {
             public ushort wVk;
             public ushort wSc;
-            public uint Flags;
+            public KeyEventFlag Flags;
             public uint Time;
             public IntPtr dwExtraInfo;
             public uint Padding1;
