@@ -98,7 +98,7 @@
             // 
             this.txtBindingKey.Location = new System.Drawing.Point(127, 71);
             this.txtBindingKey.Name = "txtBindingKey";
-            this.txtBindingKey.Size = new System.Drawing.Size(222, 20);
+            this.txtBindingKey.Size = new System.Drawing.Size(412, 20);
             this.txtBindingKey.TabIndex = 6;
             this.txtBindingKey.Enter += new System.EventHandler(this.txtBindingKey_Enter);
             // 
@@ -159,7 +159,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(375, 219);
+            this.ClientSize = new System.Drawing.Size(551, 219);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOk);
             this.Controls.Add(this.cbEnableHandled);

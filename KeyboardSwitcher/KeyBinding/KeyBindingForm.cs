@@ -51,7 +51,7 @@ namespace KeyboardSwitcher.KeyBinding
 
         private void UpdateKeyString()
         {
-            txtBindingKey.Text = string.Join(" + ", _bindingKeys.Select(x => x.ToString()));
+            txtBindingKey.Text = string.Join(" + ", _bindingKeys.Select(x => x.HasFlag(Keys.Shift)?((KeysEx)x).ToString():x.ToString()));
         }
 
         private void GenerateItem()
@@ -79,8 +79,11 @@ namespace KeyboardSwitcher.KeyBinding
 
         private void tmrHotKeyUpdate_Tick(object sender, EventArgs e)
         {
-            _bindingKeys.Clear();
-            _bindingKeys.AddRange(_bindingManager.LastPressKeys);
+            lock (_bindingManager.LastPressKeys)
+            {
+                _bindingKeys.Clear();
+                _bindingKeys.AddRange(_bindingManager.LastPressKeys);
+            }
             if(!txtBindingKey.Focused && _bindingManager.IsAnyNotPressed) tmrHotKeyUpdate.Stop();
             UpdateKeyString();
         }
@@ -89,7 +92,10 @@ namespace KeyboardSwitcher.KeyBinding
         {
             if (!tmrHotKeyUpdate.Enabled)
             {
-                _bindingManager.LastPressKeys.Clear();
+                lock (_bindingManager.LastPressKeys)
+                {
+                    _bindingManager.LastPressKeys.Clear();
+                }
                 tmrHotKeyUpdate.Start();
             }
         }

@@ -12,9 +12,21 @@ namespace PostSwitcher
         private List<Keys> _keyList = new List<Keys>();
         private SortedSet<Keys> _handledList = new SortedSet<Keys>();
         private bool _isExclusive = true;
+        private object _funcLock =new object();
 
         public bool IsHandled { get; set; }
-        public bool IsAnyNotPressed => _keyList.Count == 0;
+        public bool IsAnyNotPressed
+        {
+            get
+            {
+                bool res;
+                lock (_funcLock)
+                {
+                    res = _keyList.Count == 0;
+                }
+                return res;
+            }
+        }
         public List<BindingItem> BindingList { get; }
         public List<Keys> LastPressKeys { get; }
 
@@ -52,85 +64,93 @@ namespace PostSwitcher
 
         private bool AppendKey(Keys key)
         {
-            if (key == _keyList.LastOrDefault()) //Удерживается последняя нажатая кнопка
+            lock (_funcLock)
             {
-                lock (BindingList)
+                if (key == _keyList.LastOrDefault()) //Удерживается последняя нажатая кнопка
                 {
-                    foreach (var hotkey in BindingList)
+                    lock (BindingList)
                     {
-                        if (hotkey.Check) hotkey.KeyRepeat();
-                    }
-                }
-                return _handledList.Contains(key);
-            }
-            else if (!_keyList.Contains(key)) //Нажата новая кнопка
-            {
-                IsHandled = false;
-                _keyList.Add(key);
-                int count = _keyList.Count;
-                if (count == 1 && key == Keys.LButton) return false;
-                lock (BindingList)
-                {
-                    foreach (var hotkey in BindingList)
-                    {
-                        if (hotkey.Check)
+                        foreach (var hotkey in BindingList)
                         {
-                            hotkey.KeyNotEqually(true, count);
-                        }
-                        else if (hotkey.KeyList.Count == count)
-                        {
-                            int i;
-                            for (i = 0; i < count && hotkey.KeyList[i] == _keyList[i]; i++) ;
-                            if (i == count) hotkey.KeyDown(_isExclusive);
+                            if (hotkey.Check) hotkey.KeyRepeat();
                         }
                     }
+                    return _handledList.Contains(key);
                 }
-
-                lock (LastPressKeys)
+                else if (!_keyList.Contains(key)) //Нажата новая кнопка
                 {
-                    if (LastPressKeys.Count == _keyList.Count - 1)
+                    IsHandled = false;
+                    _keyList.Add(key);
+                    int count = _keyList.Count;
+                    if (count == 1 && key == Keys.LButton) return false;
+                    lock (BindingList)
                     {
-                        LastPressKeys.Add(key);
+                        foreach (var hotkey in BindingList)
+                        {
+                            if (hotkey.Check)
+                            {
+                                hotkey.KeyNotEqually(true, count);
+                            }
+                            else if (hotkey.KeyList.Count == count)
+                            {
+                                int i;
+                                for (i = 0; i < count && hotkey.KeyList[i] == _keyList[i]; i++) ;
+                                if (i == count) hotkey.KeyDown(_isExclusive);
+                            }
+                        }
                     }
-                    else
-                    {
-                        LastPressKeys.Clear();
-                        LastPressKeys.AddRange(_keyList);
-                    }
-                }
 
-                if (!IsHandled) return false;
-                _handledList.Add(key);
-                return true;
-            }
-            else
-            {
-                throw new Exception("Ошибка HKM, нажата нажатая кнопка");
-                //return;
+                    lock (LastPressKeys)
+                    {
+                        if (LastPressKeys.Count == _keyList.Count - 1)
+                        {
+                            LastPressKeys.Add(key);
+                        }
+                        else
+                        {
+                            LastPressKeys.Clear();
+                            LastPressKeys.AddRange(_keyList);
+                        }
+                    }
+
+                    if (!IsHandled) return false;
+                    _handledList.Add(key);
+                    return true;
+                }
+                else
+                {
+                    //Нажата мыша, а повторяется клава((
+                    //throw new Exception("Ошибка HKM, нажата нажатая кнопка"); 
+                    return _handledList.Contains(key);
+                }
             }
         }
 
         private bool RemoveKey(Keys key)
         {
-            var index = _keyList.LastIndexOf(key);
-            _isExclusive = _keyList.Count == 1;
-            if (index < 0 || index >= _keyList.Count)
+            lock (_funcLock)
             {
-                throw new Exception("Ошибка HKM, отпущена не нажатая кнопка");
-                //return; 
-            }
-            _keyList.RemoveAt(index);
-            lock (BindingList)
-            {
-                foreach (var hotkey in BindingList)
+                var index = _keyList.LastIndexOf(key);
+                _isExclusive = _keyList.Count == 1;
+                if (index < 0 || index >= _keyList.Count)
                 {
-                    if (hotkey.Check) hotkey.KeyNotEqually(false, _keyList.Count);
+                    //Чёртов скайп!
+                    //throw new Exception("Ошибка HKM, отпущена не нажатая кнопка");
+                    return false;
                 }
-            }
+                _keyList.RemoveAt(index);
+                lock (BindingList)
+                {
+                    foreach (var hotkey in BindingList)
+                    {
+                        if (hotkey.Check) hotkey.KeyNotEqually(false, _keyList.Count);
+                    }
+                }
 
-            if (!_handledList.Contains(key)) return false;
-            _handledList.Remove(key);
-            return true;
+                if (!_handledList.Contains(key)) return false;
+                _handledList.Remove(key);
+                return true;
+            }
         }
 
 
