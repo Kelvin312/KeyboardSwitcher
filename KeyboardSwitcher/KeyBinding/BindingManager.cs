@@ -11,18 +11,18 @@ namespace PostSwitcher
         private KeyboardHook _keyboardHook = new KeyboardHook();
         private List<Keys> _keyList = new List<Keys>();
         private SortedSet<Keys> _handledList = new SortedSet<Keys>();
-
-        private bool _isHandled;
         private bool _isExclusive = true;
+
+        public bool IsHandled { get; set; }
+        public bool IsAnyNotPressed => _keyList.Count == 0;
+        public List<BindingItem> BindingList { get; }
+        public List<Keys> LastPressKeys { get; }
 
         public BindingManager()
         {
             BindingList = new List<BindingItem>();
             LastPressKeys = new List<Keys>();
         }
-
-        public List<BindingItem> BindingList { get; }
-        public List<Keys> LastPressKeys { get; } 
 
         public void RemoveBindingItem(int index)
         {
@@ -44,7 +44,7 @@ namespace PostSwitcher
 
         public void ActivateHotKey(bool isDown, BindingItem e)
         {
-            _isHandled |= e.KeyType.HasFlag(BindingType.IsEnableHandled);
+            IsHandled |= e.KeyType.HasFlag(BindingType.IsEnableHandled);
         }
 
         private bool AppendKey(Keys key)
@@ -62,7 +62,7 @@ namespace PostSwitcher
             }
             else if (!_keyList.Contains(key)) //Нажата новая кнопка
             {
-                _isHandled = false;
+                IsHandled = false;
                 _keyList.Add(key);
                 int count = _keyList.Count;
                 if (count == 1 && key == Keys.LButton) return false;
@@ -83,10 +83,20 @@ namespace PostSwitcher
                     }
                 }
 
-                LastPressKeys.Clear();
-                LastPressKeys.AddRange(_keyList);
+                lock (LastPressKeys)
+                {
+                    if (LastPressKeys.Count == _keyList.Count - 1)
+                    {
+                        LastPressKeys.Add(key);
+                    }
+                    else
+                    {
+                        LastPressKeys.Clear();
+                        LastPressKeys.AddRange(_keyList);
+                    }
+                }
 
-                if (!_isHandled) return false;
+                if (!IsHandled) return false;
                 _handledList.Add(key);
                 return true;
             }
@@ -99,10 +109,9 @@ namespace PostSwitcher
 
         private bool RemoveKey(Keys key)
         {
-            int count = _keyList.Count - 1;
             var index = _keyList.LastIndexOf(key);
-            _isExclusive = count == 0;
-            if (index < 0 || index > count)
+            _isExclusive = _keyList.Count == 1;
+            if (index < 0 || index >= _keyList.Count)
             {
                 throw new Exception("Ошибка HKM, отпущена не нажатая кнопка");
                 //return; 
@@ -112,7 +121,7 @@ namespace PostSwitcher
             {
                 foreach (var hotkey in BindingList)
                 {
-                    if (hotkey.Check) hotkey.KeyNotEqually(false, count);
+                    if (hotkey.Check) hotkey.KeyNotEqually(false, _keyList.Count);
                 }
             }
 
@@ -146,7 +155,7 @@ namespace PostSwitcher
         {
             if (_keyList.Count > 0)
             {
-                AppendKey(e.KeyCode);
+                e.Handled = AppendKey(e.KeyCode);
                 RemoveKey(e.KeyCode);
             }
             else

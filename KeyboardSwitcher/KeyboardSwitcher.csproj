@@ -57,6 +57,12 @@
     <Compile Include="05082016\MixerControl.cs" />
     <Compile Include="KeyBinding\BindingItem.cs" />
     <Compile Include="KeyBinding\BindingManager.cs" />
+    <Compile Include="KeyBinding\KeyBindingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="KeyBinding\KeyBindingForm.Designer.cs">
+      <DependentUpon>KeyBindingForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="05082016\SystemWindow.cs" />
@@ -66,6 +72,9 @@
     <Compile Include="UI\TestForm.Designer.cs">
       <DependentUpon>TestForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="KeyBinding\KeyBindingForm.resx">
+      <DependentUpon>KeyBindingForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
+using KeyboardSwitcher.KeyBinding;
 using PostSwitcher;
 
 namespace KeyboardSwitcher.UI
@@ -45,9 +46,11 @@ namespace KeyboardSwitcher.UI
         //}
 
         private MixerControl mc;
-        private MouseHook mo;
+       // private MouseHook mo;
         private KeyboardHook ke;
         private SystemWindow wnd;
+        private BindingManager man;
+        private BindingItem bi;
 
         private void TestForm_Load(object sender, EventArgs e)
         {
@@ -56,14 +59,32 @@ namespace KeyboardSwitcher.UI
             checkBox1.Checked = mc.Mute;
             trackBar1.Value = (int) mc.MasterVolume;
 
-            mo = new MouseHook();
-            mo.SetHook();
-            mo.MouseDown += Mo_MouseDown;
+           // mo = new MouseHook();
+          //  mo.SetHook();
+           // mo.MouseDown += Mo_MouseDown;
 
             ke = new KeyboardHook();
             ke.SetHook();
             ke.KeyDown += Ke_KeyDown;
+
+            man = new BindingManager();
+
+             bi = new BindingItem((new []{Keys.ControlKey, Keys.K}).ToList(),BindingType.Press, 1,0);
+
+            
         }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            KeyBindingForm form = new KeyBindingForm(man);
+            form.CreateDialog(bi);
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                bi = form.ResultItem;
+            }
+            form.Close();
+        }
+
 
         private void Ke_KeyDown(object sender, KeyEventArgs e)
         {
@@ -190,5 +211,7 @@ namespace KeyboardSwitcher.UI
         {
             wnd.Refresh();
         }
+
+       
     }
 }

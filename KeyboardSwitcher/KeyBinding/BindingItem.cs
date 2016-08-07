@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace PostSwitcher
@@ -10,9 +9,13 @@ namespace PostSwitcher
     [Flags]
     public enum BindingType : int
     {
+        [Description("По нажатию")]
         Press = 1,
+        [Description("Удерживать")]
         Hold = 2,
+        [Description("По отпусканию всех клавиш")]
         Release = 4,
+        [Description("По отпусканию, без удержания")]
         ReleaseNotHold = 8,
         IsOtherNotPress = 256,
         IsEnableHandled = 512,
