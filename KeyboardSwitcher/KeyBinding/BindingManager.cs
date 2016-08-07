@@ -39,7 +39,10 @@ namespace PostSwitcher
 
         public void AddBindingItem(BindingItem item)
         {
-            BindingList.Add(item);
+            lock (BindingList)
+            {
+                BindingList.Add(item);
+            }
         }
 
         public void ActivateHotKey(bool isDown, BindingItem e)

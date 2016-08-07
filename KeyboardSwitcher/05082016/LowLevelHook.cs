@@ -4,19 +4,15 @@ using System.Runtime.InteropServices;
 
 namespace PostSwitcher
 {
-    internal class LowLevelHook
+    internal abstract class LowLevelHook
     {
-        private HookType _type;
-        private HookCallback _callback;
+        private readonly HookType _type;
         private IntPtr _hHook;
-        private HookProcedure _internalCallback;
+        private readonly HookProcedure _internalCallback;
 
-        protected delegate bool HookCallback(IntPtr wParam, IntPtr lParam);
-
-        protected void InitLowLevelHook(HookType type, HookCallback callback)
+        protected LowLevelHook(HookType type)
         {
             _type = type;
-            _callback = callback;
             _hHook = IntPtr.Zero;
             _internalCallback = InternalCallback;
         }
@@ -41,9 +37,11 @@ namespace PostSwitcher
             _hHook = IntPtr.Zero;
         }
 
+        protected abstract bool HookCallback(IntPtr wParam, IntPtr lParam);
+
         private IntPtr InternalCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode == 0 && _callback(wParam, lParam))
+            if (nCode == 0 && HookCallback(wParam, lParam))
             {
                 return new IntPtr(-1);
             }

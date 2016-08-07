@@ -9,12 +9,11 @@ namespace PostSwitcher
         public event KeyEventHandler KeyDown;
         public event KeyEventHandler KeyUp;
 
-        public KeyboardHook()
+        public KeyboardHook():base(HookType.WH_KEYBOARD_LL)
         {
-            base.InitLowLevelHook(HookType.WH_KEYBOARD_LL, KeyboardCallback);
         }
 
-        private bool KeyboardCallback(IntPtr wParam, IntPtr lParam)
+        protected override bool HookCallback(IntPtr wParam, IntPtr lParam)
         {
             var keyboardHookStruct = (KeyboardHookStruct)Marshal.PtrToStructure(lParam, typeof(KeyboardHookStruct));
             var e = new KeyEventArgs((Keys)keyboardHookStruct.VirtualKeyCode);

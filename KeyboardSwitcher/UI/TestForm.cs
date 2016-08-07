@@ -68,6 +68,7 @@ namespace KeyboardSwitcher.UI
             ke.KeyDown += Ke_KeyDown;
 
             man = new BindingManager();
+            man.InitHook();
 
              bi = new BindingItem((new []{Keys.ControlKey, Keys.K}).ToList(),BindingType.Press, 1,0);
 

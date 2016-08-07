@@ -90,8 +90,8 @@ namespace KeyboardSwitcher.KeyBinding
             if (!tmrHotKeyUpdate.Enabled)
             {
                 _bindingManager.LastPressKeys.Clear();
+                tmrHotKeyUpdate.Start();
             }
-            tmrHotKeyUpdate.Start();
         }
     }
 }

@@ -13,9 +13,8 @@ namespace PostSwitcher
 
         private POINT _oldPoint;
 
-        public MouseHook() 
+        public MouseHook():base(HookType.WH_MOUSE_LL) 
         {
-            InitLowLevelHook(HookType.WH_MOUSE_LL, MouseCallback);
         }
 
         public new void SetHook()
@@ -25,7 +24,7 @@ namespace PostSwitcher
             base.SetHook();
         }
 
-        private bool MouseCallback(IntPtr wParam, IntPtr lParam)
+        protected override bool HookCallback(IntPtr wParam, IntPtr lParam)
         {
             var mouseHookStruct = (MouseLLHookStruct)Marshal.PtrToStructure(lParam, typeof (MouseLLHookStruct));
 
